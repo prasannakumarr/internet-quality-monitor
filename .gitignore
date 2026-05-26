@@ -1,0 +1,19 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Data — never commit; contains real measurements and large scratch files
+data/speedtest.db
+data/speedtest.db.backup
+data/upload_payload.bin
+
+# Personal setup notes (may contain IPs, domain names, tunnel IDs)
+SETUP_LOG.txt
+
+# Editor / tool configs
+.claude/
+.DS_Store
+*.swp
+*.swo

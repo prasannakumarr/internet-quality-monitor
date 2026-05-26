@@ -1,0 +1,13 @@
+[Unit]
+Description=Speedtest Flask dashboard
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/Desktop/speed
+ExecStart=%h/Desktop/speed/.venv/bin/python %h/Desktop/speed/app.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

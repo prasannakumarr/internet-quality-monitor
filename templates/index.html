@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Internet Quality Monitor</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root { color-scheme: light dark; }
+    body  { font-family: system-ui, sans-serif; max-width: 1100px; margin: 2rem auto; padding: 0 1rem; }
+    h1    { margin: 0 0 .25rem; }
+    .meta { color: #888; font-size: .9rem; margin-bottom: 1.5rem; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin: 1rem 0 2rem; }
+    .card { padding: 1rem; border: 1px solid #8884; border-radius: 10px; }
+    .card h3  { margin: 0 0 .3rem; font-size: .8rem; color: #888; font-weight: 500; text-transform: uppercase; letter-spacing: .04em; }
+    .card .v  { font-size: 1.6rem; font-weight: 600; }
+    .card small { font-size: .7em; color: #888; font-weight: 400; }
+    .empty { padding: 3rem; text-align: center; border: 1px dashed #8884; border-radius: 10px; color: #888; }
+    .divider { border: none; border-top: 1px solid #8882; margin: 2rem 0; }
+    .section-title { margin: 2.5rem 0 1rem; font-size: 1.5rem; font-weight: 700; border-bottom: 2px solid #8882; padding-bottom: .5rem; }
+    .headline { padding: 1.2rem 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; border: 1px solid transparent; }
+    .headline.good  { background: #e8f5e9; border-color: #a5d6a7; color: #1b5e20; }
+    .headline.warn  { background: #fff8e1; border-color: #ffe082; color: #4e3b00; }
+    .headline.bad   { background: #ffebee; border-color: #ef9a9a; color: #7f0000; }
+    .headline.muted { background: #f5f5f5; border-color: #ddd;    color: #555; }
+    @media (prefers-color-scheme: dark) {
+      .headline.good  { background: #1b3a1f; border-color: #2e7d32; color: #a5d6a7; }
+      .headline.warn  { background: #3a2e00; border-color: #f9a825; color: #ffe082; }
+      .headline.bad   { background: #3e0000; border-color: #c62828; color: #ef9a9a; }
+      .headline.muted { background: #222;    border-color: #444;    color: #aaa; }
+    }
+    .headline .score  { font-size: 2.4rem; font-weight: 700; line-height: 1; }
+    .headline .label  { font-size: .85rem; opacity: .75; margin-top: .2rem; }
+    .headline .detail { margin-top: .8rem; font-size: .95rem; line-height: 1.6; }
+    .progress p { color: #888; font-size: .85rem; margin: 0 0 .3rem; }
+    .bar-outer { background: #e0e0e0; border-radius: 6px; height: 8px; width: 100%; max-width: 400px; }
+    .bar-inner { background: #42a5f5; border-radius: 6px; height: 8px; }
+    .chart-desc { font-size: .9rem; color: #666; margin: 1rem 0 1.5rem 0; line-height: 1.6; }
+    .ping-guide { background: #f9f9f9; border-left: 4px solid #42a5f5; padding: 1.5rem; border-radius: 8px; margin: 1.5rem 0; }
+    .ping-guide h3 { margin-top: 0; color: #333; font-size: 1.1rem; }
+    .ping-guide .benchmark { display: flex; align-items: center; padding: .5rem 0; font-size: .95rem; }
+    .ping-guide .benchmark-value { font-weight: 600; min-width: 120px; color: #333; }
+    .ping-guide .benchmark-label { color: #666; }
+    .probe-guide { background: #f0f7ff; border-left: 4px solid #0288d1; padding: 1.5rem; border-radius: 8px; margin: 1.5rem 0; }
+    .probe-guide h3 { margin-top: 0; color: #01579b; font-size: 1.1rem; }
+    .probe-guide .probe-item { padding: .6rem 0; font-size: .95rem; }
+    .probe-guide .phase { font-weight: 600; color: #01579b; min-width: 100px; }
+    .probe-guide .meaning { color: #555; }
+    .probe-guide .status-good { color: #2ca02c; font-weight: 600; }
+    .probe-guide .status-bad { color: #d62728; font-weight: 600; }
+    .probe-guide .bottomline { background: #e3f2fd; padding: .8rem; border-radius: 6px; margin-top: 1rem; font-size: .9rem; font-weight: 500; color: #0d47a1; }
+    .quality-guide { background: #f0f9ff; border-left: 4px solid #0ea5e9; padding: 1.5rem; border-radius: 8px; margin: 1.5rem 0; }
+    .quality-guide h3 { margin-top: 0; color: #0c4a6e; font-size: 1.1rem; }
+    .quality-guide table { width: 100%; border-collapse: collapse; font-size: .95rem; margin: 1rem 0; }
+    .quality-guide th { background: #e0f2fe; color: #0c4a6e; padding: .6rem; text-align: left; font-weight: 600; border-bottom: 2px solid #0ea5e9; }
+    .quality-guide td { padding: .6rem; border-bottom: 1px solid #bfdbfe; }
+    .quality-guide tr:last-child td { border-bottom: none; }
+    .quality-guide .formula { font-family: monospace; color: #075985; }
+    .quality-guide .example { background: #e0f2fe; padding: 1rem; border-radius: 6px; margin: 1rem 0; font-size: .9rem; }
+    .quality-guide .example strong { color: #0c4a6e; }
+    .quality-guide .color-legend { display: flex; gap: 1.5rem; flex-wrap: wrap; margin-top: 1rem; }
+    .quality-guide .color-item { display: flex; align-items: center; gap: .5rem; font-size: .95rem; }
+    .quality-guide .color-box { width: 24px; height: 24px; border-radius: 4px; }
+    @media (prefers-color-scheme: dark) {
+      .probe-guide { background: #0d2844; border-left-color: #4fc3f7; }
+      .probe-guide h3 { color: #4fc3f7; }
+      .probe-guide .phase { color: #4fc3f7; }
+      .probe-guide .meaning { color: #bbb; }
+      .probe-guide .bottomline { background: #1a237e; color: #64b5f6; }
+      .quality-guide { background: #0c2d3e; border-left-color: #06b6d4; }
+      .quality-guide h3 { color: #06b6d4; }
+      .quality-guide th { background: #0f3a4a; color: #06b6d4; border-bottom-color: #06b6d4; }
+      .quality-guide td { border-bottom-color: #1a4a5a; }
+      .quality-guide .formula { color: #22d3ee; }
+      .quality-guide .example { background: #0f3a4a; color: #ccc; }
+      .quality-guide .example strong { color: #06b6d4; }
+    }
+    .ping-guide .ping-excellent { color: #2ca02c; font-weight: 600; }
+    .ping-guide .ping-great { color: #4CAF50; font-weight: 600; }
+    .ping-guide .ping-acceptable { color: #ff9800; font-weight: 600; }
+    .ping-guide .ping-problem { color: #d62728; font-weight: 600; }
+    .plotly-graph-div { width: 100% !important; margin: 0 auto !important; }
+    @media (max-width: 768px) {
+      body { margin: 1rem auto; padding: 0 0.75rem; }
+      h1 { font-size: 1.5rem; }
+      h2 { font-size: 1.2rem; }
+      .grid { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.75rem; margin: 1rem 0 1.5rem; }
+      .card { padding: 0.75rem; border-radius: 8px; }
+      .card h3 { font-size: 0.7rem; }
+      .card .v { font-size: 1.3rem; }
+      .meta { font-size: 0.8rem; margin-bottom: 1rem; }
+      .chart-desc { font-size: 0.85rem; margin: 0.75rem 0 1rem; }
+      .section-title { margin: 2rem 0 0.75rem; font-size: 1.2rem; padding-bottom: 0.4rem; }
+      .divider { margin: 1.5rem 0; }
+      .headline { padding: 1rem 1.25rem; margin-bottom: 1rem; }
+      .headline .score { font-size: 2rem; }
+      .headline .detail { font-size: 0.85rem; }
+      .progress p { font-size: 0.8rem; }
+      .bar-outer { max-width: 100%; }
+      .ping-guide { padding: 1rem; margin: 1rem 0; }
+      .ping-guide h3 { font-size: 1rem; }
+      .ping-guide .benchmark { padding: 0.4rem 0; font-size: 0.85rem; }
+      .ping-guide .benchmark-value { min-width: 80px; }
+      .probe-guide { padding: 1rem; margin: 1rem 0; }
+      .probe-guide h3 { font-size: 1rem; }
+      .probe-guide .probe-item { padding: 0.5rem 0; font-size: 0.85rem; }
+      .probe-guide .phase { min-width: 80px; }
+    }
+    @media (max-width: 480px) {
+      body { margin: 0.75rem auto; padding: 0 0.5rem; }
+      h1 { font-size: 1.3rem; margin-bottom: 0.2rem; }
+      .grid { grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 0.5rem; margin: 0.75rem 0 1.25rem; }
+      .card { padding: 0.6rem; }
+      .card h3 { font-size: 0.65rem; }
+      .card .v { font-size: 1.1rem; }
+      .card small { font-size: 0.6em; }
+      .meta { font-size: 0.75rem; }
+      .section-title { margin: 1.5rem 0 0.5rem; font-size: 1.1rem; }
+      .headline { padding: 0.8rem 1rem; }
+      .headline .score { font-size: 1.7rem; }
+      .headline .label { font-size: 0.8rem; }
+      .headline .detail { font-size: 0.8rem; }
+      .ping-guide { padding: 0.8rem; }
+      .ping-guide .benchmark-value { min-width: 70px; font-size: 0.8rem; }
+      .probe-guide { padding: 0.8rem; }
+      .probe-guide .phase { min-width: 70px; font-size: 0.8rem; }
+    }
+    @media (prefers-color-scheme: dark) {
+      .bar-outer { background: #333; }
+      .chart-desc { color: #aaa; }
+      .ping-guide { background: #1a1a1a; border-left-color: #64b5f6; }
+      .ping-guide h3 { color: #ddd; }
+      .ping-guide .benchmark-value { color: #ddd; }
+      .ping-guide .benchmark-label { color: #aaa; }
+    }
+  </style>
+</head>
+<body>
+  <h1>Internet speed</h1>
+  {% if count == 0 %}
+    <div class="empty">
+      <p>No measurements yet.</p>
+      <p>Run <code>python runner.py</code> manually, or wait for the systemd timer to fire.</p>
+    </div>
+  {% else %}
+    <p class="meta">
+      {{ count }} measurement(s) &middot;
+      latest {{ latest.ts.strftime('%Y-%m-%d %H:%M') }} via {{ latest.server }}
+    </p>
+    <div class="grid">
+      <div class="card"><h3>Latest down</h3><div class="v">{{ "%.1f"|format(latest.download_mbps) }} <small>Mbps</small></div></div>
+      <div class="card"><h3>Latest up</h3><div class="v">{{ "%.1f"|format(latest.upload_mbps) }} <small>Mbps</small></div></div>
+      <div class="card"><h3>Latest ping</h3><div class="v">{{ "%.0f"|format(latest.ping_ms) }} <small>ms</small></div></div>
+      <div class="card"><h3>Avg down <small>(30d)</small></h3><div class="v">{{ summary.avg_down }} <small>Mbps</small></div></div>
+      <div class="card"><h3>Avg up <small>(30d)</small></h3><div class="v">{{ summary.avg_up }} <small>Mbps</small></div></div>
+      <div class="card"><h3>Min / Max down <small>(30d)</small></h3><div class="v">{{ summary.min_down }} / {{ summary.max_down }} <small>Mbps</small></div></div>
+      <div class="card"><h3>Std dev down <small>(30d)</small></h3><div class="v">{{ summary.std_down_30d }} <small>Mbps</small></div></div>
+      <div class="card"><h3>90 percentile downspeed <small>(30D)</small></h3><div class="v">{{ summary.p90_down_30d }} <small>Mbps</small></div></div>
+      <div class="card"><h3>95 percentile downspeed <small>(30D)</small></h3><div class="v">{{ summary.p95_down_30d }} <small>Mbps</small></div></div>
+    </div>
+
+    {{ charts.speed_7d|safe }}
+    <div class="chart-desc">{{ descriptions.speed_7d }}</div>
+    <hr class="divider">
+
+    {{ charts.speed_30d|safe }}
+    <div class="chart-desc">{{ descriptions.speed_30d }}</div>
+    <hr class="divider">
+
+    {{ charts.speed_30d_hist_down|safe }}
+    <div class="chart-desc">{{ descriptions.speed_30d_hist_down }}</div>
+    <hr class="divider">
+
+    {{ charts.speed_30d_hist_up|safe }}
+    <div class="chart-desc">{{ descriptions.speed_30d_hist_up }}</div>
+    <hr class="divider">
+
+    {{ charts.speed_30d_box|safe }}
+    <div class="chart-desc">{{ descriptions.speed_30d_box }}</div>
+    <hr class="divider">
+
+    {{ charts.ping_7d|safe }}
+    <div class="chart-desc">{{ descriptions.ping_7d|safe }}</div>
+
+    <div class="ping-guide">
+      <h3>📌 What's a "Good" Ping?</h3>
+      <div class="benchmark">
+        <div class="benchmark-value ping-excellent">0–30ms</div>
+        <div class="benchmark-label"><strong>Perfect</strong> — You won't notice any delay. Professional gaming & real-time apps work flawlessly.</div>
+      </div>
+      <div class="benchmark">
+        <div class="benchmark-value ping-great">30–60ms</div>
+        <div class="benchmark-label"><strong>Great</strong> — Normal, smooth experience. Gaming, video calls, and web browsing all work well.</div>
+      </div>
+      <div class="benchmark">
+        <div class="benchmark-value ping-acceptable">60–100ms</div>
+        <div class="benchmark-label"><strong>Acceptable</strong> — Slight lag but workable. Gaming is playable; video calls have minor delay.</div>
+      </div>
+      <div class="benchmark">
+        <div class="benchmark-value ping-problem">100ms+</div>
+        <div class="benchmark-label"><strong>Problem</strong> — Significant delay. Contact your ISP with this data and demand better service.</div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    {{ charts.ping_30d|safe }}
+    <div class="chart-desc">{{ descriptions.ping_30d }}</div>
+    <hr class="divider">
+
+    {{ charts.ping_30d_hist|safe }}
+    <div class="chart-desc">{{ descriptions.ping_30d_hist|safe }}</div>
+    <hr class="divider">
+
+    {{ charts.ping_30d_box|safe }}
+    <div class="chart-desc">{{ descriptions.ping_30d_box|safe }}</div>
+
+    <h2 id="isp" class="section-title">ISP quality evidence</h2>
+
+    {% if headline %}
+      {% if headline.good_pct >= 90 %}
+        <div class="headline good">
+      {% elif headline.good_pct >= 75 %}
+        <div class="headline warn">
+      {% else %}
+        <div class="headline bad">
+      {% endif %}
+          <div class="score">{{ headline.good_pct }}%</div>
+          <div class="label">of measurements were healthy</div>
+          <div class="detail">
+            Worst hour: <strong>{{ headline.worst_hour }} IST</strong> —
+            download drops to {{ headline.worst_down }} Mbps (vs {{ headline.peak_down }} Mbps peak),
+            ping rises to {{ headline.worst_ping }} ms (vs {{ headline.best_ping }} ms best).
+            Based on <strong>{{ headline.days }} day(s)</strong> of data — patterns become reliable after ~14 days.
+          </div>
+        </div>
+    {% else %}
+      <div class="headline muted">
+        <div class="score">—</div>
+        <div class="label">not enough data yet</div>
+        <div class="detail">Need at least 10 measurements. The 3-hour timer will build this up automatically.</div>
+      </div>
+    {% endif %}
+
+    <div class="progress" style="margin-bottom:1.5rem">
+      <p>Data collection progress toward reliable 14-day patterns — {{ isp_days }} / 14 days</p>
+      <div class="bar-outer"><div class="bar-inner" style="width:{{ [((isp_days / 14) * 100)|int, 100]|min }}%"></div></div>
+    </div>
+
+    {{ charts.isp_hourly|safe }}
+    <div class="chart-desc">{{ descriptions.isp_hourly }}</div>
+
+    <div class="quality-guide">
+      <h3>📊 How Quality Score is Calculated</h3>
+      <p>The quality score measures how well your ISP delivered service in that time window, compared to your best performance. It's a weighted combination of speed and responsiveness.</p>
+
+      <table>
+        <tr>
+          <th>Component</th>
+          <th>Formula</th>
+          <th>Weight</th>
+        </tr>
+        <tr>
+          <td><strong>Speed quality</strong></td>
+          <td class="formula">(median speed in window) / (90th percentile speed)</td>
+          <td>60%</td>
+        </tr>
+        <tr>
+          <td><strong>Ping quality</strong></td>
+          <td class="formula">(best ping ever) / (median ping in window)</td>
+          <td>40%</td>
+        </tr>
+        <tr>
+          <td><strong>Combined score</strong></td>
+          <td class="formula">(0.6 × speed) + (0.4 × ping) × 100%</td>
+          <td>100%</td>
+        </tr>
+      </table>
+
+      <div class="example">
+        <strong>Example:</strong> If your 90th percentile speed is 400 Mbps, best ping is 2 ms, and a 3-hour window has median 380 Mbps and median ping 3 ms:<br>
+        Score = ((380/400) × 0.6 + (2/3) × 0.4) × 100 = <strong>83.7%</strong> (yellow: fair)
+      </div>
+
+      <p style="margin-top: 1.5rem; margin-bottom: 0.5rem;"><strong>Color meanings:</strong></p>
+      <div class="color-legend">
+        <div class="color-item">
+          <div class="color-box" style="background: #2ca02c;"></div>
+          <div><strong>Green (≥85%)</strong> — Excellent, you're getting 85%+ of peak speed with responsive ping</div>
+        </div>
+        <div class="color-item">
+          <div class="color-box" style="background: #ff7f0e;"></div>
+          <div><strong>Yellow (70–84%)</strong> — Fair, some degradation but acceptable</div>
+        </div>
+        <div class="color-item">
+          <div class="color-box" style="background: #d62728;"></div>
+          <div><strong>Red (&lt;70%)</strong> — Poor, significant quality loss; time to contact ISP</div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    {{ charts.isp_heatmap|safe }}
+    <div class="chart-desc">{{ descriptions.isp_heatmap }}</div>
+
+    {% if has_probes %}
+    <hr class="divider">
+
+    <div class="probe-guide">
+      <h3>🔍 How to Read: "Where Time Goes Loading Each Site"</h3>
+      <div class="probe-item">
+        <span class="phase">DNS (11–21ms)</span>
+        <span class="meaning"><span class="status-good">✓ Our ISP</span> — Looking up the website's address. Fast = ISP is routing well.</span>
+      </div>
+      <div class="probe-item">
+        <span class="phase">TCP/TLS (5–418ms)</span>
+        <span class="meaning">Connection + security handshake. <span class="status-good">✓ If fast</span>, ISP is good. <span class="status-bad">✗ If slow</span>, website is far or overloaded.</span>
+      </div>
+      <div class="probe-item">
+        <span class="phase">TTFB (24–1188ms)</span>
+        <span class="meaning"><span class="status-bad">✗ Website's problem</span> — How long the website takes to send back the first byte. Slow TTFB = website servers are struggling, not your ISP.</span>
+      </div>
+      <div class="bottomline">
+        <strong>Bottom Line:</strong> If DNS & TCP/TLS are fast, your ISP is working great! Slow websites (Netflix, Stripe) are their infrastructure problem, not yours. 💪
+      </div>
+    </div>
+
+    {{ charts.isp_probes|safe }}
+    <div class="chart-desc">{{ descriptions.isp_probes|safe }}</div>
+    {% endif %}
+
+  {% endif %}
+</body>
+</html>

@@ -1,0 +1,9 @@
+[Unit]
+Description=Run internet speed test and log to SQLite
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/Desktop/speed
+ExecStart=%h/Desktop/speed/.venv/bin/python %h/Desktop/speed/runner.py

@@ -1,0 +1,11 @@
+[Unit]
+Description=Per-site latency probe — every 5 minutes
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=5min
+Persistent=true
+RandomizedDelaySec=10s
+
+[Install]
+WantedBy=timers.target

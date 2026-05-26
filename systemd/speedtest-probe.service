@@ -1,0 +1,9 @@
+[Unit]
+Description=Per-site latency probe (DNS/TCP/TLS/TTFB)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/Desktop/speed
+ExecStart=%h/Desktop/speed/.venv/bin/python %h/Desktop/speed/probe.py
