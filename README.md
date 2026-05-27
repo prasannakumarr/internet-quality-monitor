@@ -19,6 +19,16 @@ A self-hosted dashboard that measures your internet speed and latency every 3 ho
 - **Mobile-responsive** — works on phone and tablet
 - **Dark mode** — follows system preference
 
+## Screenshots
+
+| Speed trend — last 30 days | Speed spread (boxplot) |
+|---|---|
+| ![Speed trend over 30 days](graphs/isp-internet-quality-monitor2.png) | ![Download vs upload spread](graphs/isp-internet-quality-monitor3.png) |
+
+| Upload speed distribution | ISP quality score by time of day |
+|---|---|
+| ![Upload speed histogram](graphs/isp-internet-quality-monitor4.png) | ![Quality score by 3-hour window](graphs/isp-internet-quality-monitor6.png) |
+
 ## Requirements
 
 - Linux with systemd (tested on Arch Linux)
